@@ -1,47 +1,117 @@
-# Go JSON Diff (and Patch)
+# go-jsondiff
 
-[![Wercker](https://app.wercker.com/status/00d70daaf40ce277fd4f10290f097b9d/s/master)][wercker]
-[![GoDoc](https://godoc.org/github.com/yudai/gojsondiff?status.svg)][godoc]
-[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg)][license]
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-[wercker]: https://app.wercker.com/project/bykey/00d70daaf40ce277fd4f10290f097b9d
-[godoc]: https://godoc.org/github.com/yudai/gojsondiff
-[license]: https://github.com/yudai/gojsondiff/blob/master/LICENSE
-
-## How to use
-
-### Installation
+## Installation
 
 ```sh
-go get github.com/yudai/gojsondiff
+go get github.com/mrutkows/go-jsondiff
 ```
 
-### Comparing two JSON strings
+---
 
-See `jd/main.go` for how to use this library.
+## JSON Delta format
 
+The JSON formatted output from a comparison is based upon a simplified methodology described originally here:
 
-## CLI tool
+- [https://github.com/benjamine/jsondiffpatch/blob/master/docs/deltas.md](https://github.com/benjamine/jsondiffpatch/blob/master/docs/deltas.md) for the original description.
 
-This repository contains a package that you can use as a CLI tool.
+### Delta (object) types
 
-### Installation
+#### Added
 
-```sh
-go get github.com/yudai/gojsondiff/jd
+a value was added, i.e. it was undefined and now has a value.
+
+```
+delta = [ newValue ]
 ```
 
-### Usage
+internal representation:
 
-#### Diff
+```golang
+// delta.(type) == *diff.Added
+type Added struct {
+	postDelta         // postDelta{position} where `position` is an interface with a String() method
+                      // "PostPosition() interface"
+	Value interface{} // added value (i.e., 'newValue')
+	                  // "Value()" interface
+	similarityCache
+}
 
-Just give two json files to the `jd` command:
-
-```sh
-jd one.json another.json
 ```
 
-Outputs would be something like:
+##### Notes: 
+
+- "add" operation has no "preDelta" value, only a "postDelta" value
+
+---
+
+#### Deleted
+
+a value was deleted, i.e. it had a value and is now undefined
+
+```
+delta = [ oldValue, 0, 0 ]
+```
+
+##### Notes: 
+
+- "delete" operation has no "postDelta" value, only a "preDelta" value
+
+---
+
+#### Modified
+
+a value was replaced by another value
+
+```
+delta = [ oldValue, newValue ]
+```
+
+---
+
+#### Array (with inner changes)
+
+value is an array, and there are nested changes inside its items
+
+```
+delta = {
+  _t: 'a',
+  index1: innerDelta1,
+  index2: innerDelta2,
+  index5: innerDelta5
+}
+```
+ 
+##### Notes: 
+
+- only indices with "inner" deltas are included
+- `_t: 'a'`: this tag indicates the delta applies to an array, 
+	- if a regular object (or a value type) is found when patching, an error will be thrown
+
+internal representation:
+
+```golang
+delta.(type) == *diff.Array
+```
+
+---
+
+#### Array Moves
+
+an item was moved to a different position in the same array
+
+```
+delta = [ '', destinationIndex, 3]
+```
+     
+##### Notes: 
+
+- '': represents the moved item value (suppressed by default)
+- 3: indicates "array move"
+
+
+##### JSON Delta format example
 
 ```diff
  {
@@ -142,16 +212,3 @@ This command shows:
   }
 }
 ```
-
-#### Patch
-
-Give a diff file in the delta format and the JSON file to the `jp` command.
-
-```sh
-jp diff.delta one.json
-```
-
-
-## License
-
-MIT License (see `LICENSE` for detail)
