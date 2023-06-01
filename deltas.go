@@ -2,9 +2,10 @@ package gojsondiff
 
 import (
 	"errors"
-	dmp "github.com/sergi/go-diff/diffmatchpatch"
 	"reflect"
 	"strconv"
+
+	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 // A Delta represents an atomic difference between two JSON objects.
@@ -304,11 +305,11 @@ type TextDiff struct {
 	Modified
 
 	// Diff string
-	Diff []dmp.Patch
+	Diff []diffmatchpatch.Patch
 }
 
 // NewTextDiff returns
-func NewTextDiff(position Position, diff []dmp.Patch, oldValue, newValue interface{}) *TextDiff {
+func NewTextDiff(position Position, diff []diffmatchpatch.Patch, oldValue, newValue interface{}) *TextDiff {
 	d := TextDiff{
 		Modified: *NewModified(position, oldValue, newValue),
 		Diff:     diff,
@@ -341,7 +342,7 @@ func (d *TextDiff) patch() error {
 	if d.OldValue == nil {
 		return errors.New("Old Value is not set")
 	}
-	patcher := dmp.New()
+	patcher := diffmatchpatch.New()
 	patched, successes := patcher.PatchApply(d.Diff, d.OldValue.(string))
 	for _, success := range successes {
 		if !success {
@@ -353,7 +354,7 @@ func (d *TextDiff) patch() error {
 }
 
 func (d *TextDiff) DiffString() string {
-	dmp := dmp.New()
+	dmp := diffmatchpatch.New()
 	return dmp.PatchToText(d.Diff)
 }
 

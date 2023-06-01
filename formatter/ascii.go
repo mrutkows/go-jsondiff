@@ -121,9 +121,8 @@ func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, pos
 	if len(matchedDeltas) > 0 {
 		for _, matchedDelta := range matchedDeltas {
 
-			switch matchedDelta.(type) {
+			switch matchedDelta := matchedDelta.(type) {
 			case *diff.Object:
-				d := matchedDelta.(*diff.Object)
 				switch value.(type) {
 				case map[string]interface{}:
 					//ok
@@ -137,7 +136,7 @@ func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, pos
 				f.print("{")
 				f.closeLine()
 				f.push(positionStr, len(o), false)
-				f.processObject(o, d.Deltas)
+				f.processObject(o, matchedDelta.Deltas)
 				f.pop()
 				f.newLine(AsciiSame)
 				f.print("}")
@@ -145,7 +144,6 @@ func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, pos
 				f.closeLine()
 
 			case *diff.Array:
-				d := matchedDelta.(*diff.Array)
 				switch value.(type) {
 				case []interface{}:
 					//ok
@@ -159,7 +157,7 @@ func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, pos
 				f.print("[")
 				f.closeLine()
 				f.push(positionStr, len(a), true)
-				f.processArray(a, d.Deltas)
+				f.processArray(a, matchedDelta.Deltas)
 				f.pop()
 				f.newLine(AsciiSame)
 				f.print("]")
@@ -167,30 +165,31 @@ func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, pos
 				f.closeLine()
 
 			case *diff.Added:
-				d := matchedDelta.(*diff.Added)
-				f.printRecursive(positionStr, d.Value, AsciiAdded)
+				f.printRecursive(positionStr, matchedDelta.Value, AsciiAdded)
 				f.size[len(f.size)-1]++
 
 			case *diff.Modified:
-				d := matchedDelta.(*diff.Modified)
 				savedSize := f.size[len(f.size)-1]
-				f.printRecursive(positionStr, d.OldValue, AsciiDeleted)
+				f.printRecursive(positionStr, matchedDelta.OldValue, AsciiDeleted)
 				f.size[len(f.size)-1] = savedSize
-				f.printRecursive(positionStr, d.NewValue, AsciiAdded)
+				f.printRecursive(positionStr, matchedDelta.NewValue, AsciiAdded)
 
 			case *diff.TextDiff:
 				savedSize := f.size[len(f.size)-1]
-				d := matchedDelta.(*diff.TextDiff)
-				f.printRecursive(positionStr, d.OldValue, AsciiDeleted)
+				f.printRecursive(positionStr, matchedDelta.OldValue, AsciiDeleted)
 				f.size[len(f.size)-1] = savedSize
-				f.printRecursive(positionStr, d.NewValue, AsciiAdded)
+				f.printRecursive(positionStr, matchedDelta.NewValue, AsciiAdded)
 
 			case *diff.Deleted:
-				d := matchedDelta.(*diff.Deleted)
-				f.printRecursive(positionStr, d.Value, AsciiDeleted)
+				f.printRecursive(positionStr, matchedDelta.Value, AsciiDeleted)
+
+			case *diff.Moved:
+				fmt.Printf("processItem(): [%T]", matchedDelta)
+				fmt.Printf("processItem(): *diff.Moved: not supported\n")
 
 			default:
-				return errors.New("Unknown Delta type detected")
+				err := fmt.Errorf("unknown Delta type [%T] detected", matchedDelta)
+				return errors.New(err.Error())
 			}
 
 		}
