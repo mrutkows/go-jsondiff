@@ -185,6 +185,8 @@ func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, pos
 
 			case *diff.Moved:
 				fmt.Printf("processItem(): [%T]", matchedDelta)
+				f.printRecursive(matchedDelta.PrePosition().String(), matchedDelta.Value, AsciiDeleted)
+				f.printRecursive(matchedDelta.PostPosition().String(), matchedDelta.Value, AsciiAdded)
 				fmt.Printf("processItem(): *diff.Moved: not supported\n")
 
 			default:
@@ -309,20 +311,18 @@ func (f *AsciiFormatter) print(a string) {
 }
 
 func (f *AsciiFormatter) printRecursive(name string, value interface{}, marker string) {
-	switch value.(type) {
+	switch typedValue := value.(type) {
 	case map[string]interface{}:
 		f.newLine(marker)
 		f.printKey(name)
 		f.print("{")
 		f.closeLine()
-
-		m := value.(map[string]interface{})
-		size := len(m)
+		size := len(typedValue)
 		f.push(name, size, false)
 
-		keys := sortedKeys(m)
+		keys := sortedKeys(typedValue)
 		for _, key := range keys {
-			f.printRecursive(key, m[key], marker)
+			f.printRecursive(key, typedValue[key], marker)
 		}
 		f.pop()
 
@@ -336,11 +336,9 @@ func (f *AsciiFormatter) printRecursive(name string, value interface{}, marker s
 		f.printKey(name)
 		f.print("[")
 		f.closeLine()
-
-		s := value.([]interface{})
-		size := len(s)
+		size := len(typedValue)
 		f.push("", size, true)
-		for _, item := range s {
+		for _, item := range typedValue {
 			f.printRecursive("", item, marker)
 		}
 		f.pop()
