@@ -9,6 +9,19 @@ import (
 	diff "github.com/mrutkows/go-jsondiff"
 )
 
+const (
+	AsciiSame    = " "
+	AsciiAdded   = "+"
+	AsciiDeleted = "-"
+	AsciiMoved   = "=>"
+)
+
+var AsciiStyles = map[string]string{
+	AsciiAdded:   "30;42", // background green
+	AsciiDeleted: "30;41", // background red
+	AsciiMoved:   "30;42", // background yellow
+}
+
 func NewAsciiFormatter(left interface{}, config AsciiFormatterConfig) *AsciiFormatter {
 	return &AsciiFormatter{
 		left:   left,
@@ -172,10 +185,10 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 			case *diff.Deleted:
 				f.printRecursive(positionStr, matchedDelta.Value, AsciiDeleted)
 			case *diff.Moved:
-				fmt.Printf("processItem(): [%T]", matchedDelta)
-				f.printRecursive(matchedDelta.PrePosition().String(), matchedDelta.Value, AsciiDeleted)
-				f.printRecursive(matchedDelta.PostPosition().String(), matchedDelta.Value, AsciiAdded)
-				fmt.Printf("processItem(): *diff.Moved: not supported\n")
+				fmt.Printf("processItem(): valueType: [%T], matchedDelta type: [%T]", value, matchedDelta)
+				f.printRecursive(matchedDelta.PrePosition().String(), matchedDelta.Value, AsciiMoved)
+				//f.printRecursive(matchedDelta.PostPosition().String(), matchedDelta.Value, AsciiAdded)
+				//fmt.Printf("processItem(): *diff.Moved: not supported\n")
 			default:
 				err := fmt.Errorf("unknown Delta type [%T] detected", matchedDelta)
 				return errors.New(err.Error())
@@ -206,17 +219,6 @@ func (f *AsciiFormatter) searchDeltas(deltas []diff.Delta, position diff.Positio
 		}
 	}
 	return
-}
-
-const (
-	AsciiSame    = " "
-	AsciiAdded   = "+"
-	AsciiDeleted = "-"
-)
-
-var AsciiStyles = map[string]string{
-	AsciiAdded:   "30;42",
-	AsciiDeleted: "30;41",
 }
 
 func (f *AsciiFormatter) push(name string, size int, array bool) {
