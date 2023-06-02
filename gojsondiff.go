@@ -32,7 +32,7 @@ func (diff *diff) Modified() bool {
 	return len(diff.deltas) > 0
 }
 
-// A Differ conmapres JSON objects and apply patches
+// A Differ compares JSON objects and applies patches
 type Differ struct {
 	textDiffMinimumLength int
 }
@@ -215,9 +215,7 @@ func (differ *Differ) compareArrays(
 		if len(delSlice) > 0 && len(addSlice) > 0 {
 			var bestDeltas []Delta
 			bestDeltas, delSlice, addSlice = differ.maximizeSimilarities(delSlice, addSlice)
-			for _, delta := range bestDeltas {
-				deltas = append(deltas, delta)
-			}
+			deltas = append(deltas, bestDeltas...)
 		}
 
 		for _, del := range delSlice {
@@ -280,9 +278,9 @@ func (differ *Differ) compareValues(
 func applyDeltas(deltas []Delta, object interface{}) interface{} {
 	preDeltas := make(preDeltas, 0)
 	for _, delta := range deltas {
-		switch delta.(type) {
+		switch preDelta := delta.(type) {
 		case PreDelta:
-			preDeltas = append(preDeltas, delta.(PreDelta))
+			preDeltas = append(preDeltas, preDelta)
 		}
 	}
 	sort.Sort(preDeltas)
@@ -292,9 +290,9 @@ func applyDeltas(deltas []Delta, object interface{}) interface{} {
 
 	postDeltas := make(postDeltas, 0, len(deltas)-len(preDeltas))
 	for _, delta := range deltas {
-		switch delta.(type) {
+		switch postDelta := delta.(type) {
 		case PostDelta:
-			postDeltas = append(postDeltas, delta.(PostDelta))
+			postDeltas = append(postDeltas, postDelta)
 		}
 	}
 	sort.Sort(postDeltas)
@@ -407,7 +405,7 @@ func stringToInterfaceSlice(str string) []interface{} {
 
 func sortedKeys(m map[string]interface{}) (keys []string) {
 	keys = make([]string, 0, len(m))
-	for key, _ := range m {
+	for key := range m {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)

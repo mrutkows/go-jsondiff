@@ -2,6 +2,7 @@ package gojsondiff
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 
@@ -49,7 +50,7 @@ type Position interface {
 	CompareTo(another Position) bool
 }
 
-// A Name is a Postition with a string, which means the delta is in an object.
+// A Name is a Position with a string, which means the delta is in an object.
 type Name string
 
 func (n Name) String() (name string) {
@@ -340,13 +341,13 @@ func (d *TextDiff) PostApply(object interface{}) interface{} {
 
 func (d *TextDiff) patch() error {
 	if d.OldValue == nil {
-		return errors.New("Old Value is not set")
+		return errors.New("TextDiff: patch(): delta.OldValue is nil")
 	}
 	patcher := diffmatchpatch.New()
 	patched, successes := patcher.PatchApply(d.Diff, d.OldValue.(string))
 	for _, success := range successes {
 		if !success {
-			return errors.New("Failed to apply a patch")
+			return fmt.Errorf("TextDiff: patch(): failed to apply a patch. DiffString=\"%v\"", d.DiffString())
 		}
 	}
 	d.NewValue = patched
@@ -358,7 +359,7 @@ func (d *TextDiff) DiffString() string {
 	return dmp.PatchToText(d.Diff)
 }
 
-// A Delted represents deleted field or index of an Object or an Array.
+// A "Deleted" type represents deleted field or index of an Object or an Array.
 type Deleted struct {
 	preDelta
 
@@ -393,9 +394,9 @@ func (d Deleted) Similarity() (similarity float64) {
 	return 0
 }
 
-// A Moved represents field that is moved, which means the index or name is
+// A "Moved" type represents field that is moved, which means the index or name is
 // changed. Note that, in this library, assigning a Moved and a Modified to
-// a single position is not allowed. For the compatibility with jsondiffpatch,
+// a single position is not allowed. For compatibility with jsondiffpatch,
 // the Moved in this library can hold the old and new value in it.
 type Moved struct {
 	preDelta

@@ -2,6 +2,8 @@
     "cSpell.words": [
         "diffmatchpatch",
         "gojsondiff",
+        "jsondiffpatch",
+        "sergi",
         "Unmarshaller"
     ]
 }
