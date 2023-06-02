@@ -19,7 +19,7 @@ const (
 var AsciiStyles = map[string]string{
 	AsciiDeleted: "30;41", // background red
 	AsciiAdded:   "30;42", // background green
-	AsciiMoved:   "30;45", // background yellow
+	AsciiMoved:   "30;44", // background yellow
 }
 
 func NewAsciiFormatter(left interface{}, config AsciiFormatterConfig) *AsciiFormatter {
