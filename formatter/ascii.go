@@ -127,14 +127,6 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				if !ok {
 					return fmt.Errorf("expected: map[string]interface{}: actual type: (%T)", value)
 				}
-				// switch valueType := value.(type) {
-				// case map[string]interface{}:
-				// 	//ok
-				// default:
-				// 	return fmt.Errorf("expected: map[string]interface{}: actual type: (%T)", valueType)
-				// }
-				//o := value.(map[string]interface{})
-
 				f.newLine(AsciiSame)
 				f.printKey(positionStr)
 				f.print("{")
@@ -148,19 +140,10 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				f.closeLine()
 
 			case *diff.Array:
-				// TODO: SHOULD test for slice type
 				interfaceSlice, ok := value.([]interface{})
 				if !ok {
 					return fmt.Errorf("expected: []interface{}: actual type: (%T)", value)
 				}
-				// switch value.(type) {
-				// case []interface{}:
-				// 	//ok
-				// default:
-				// 	return errors.New("Type mismatch")
-				// }
-				// a := value.([]interface{})
-
 				f.newLine(AsciiSame)
 				f.printKey(positionStr)
 				f.print("[")
@@ -176,28 +159,23 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 			case *diff.Added:
 				f.printRecursive(positionStr, matchedDelta.Value, AsciiAdded)
 				f.size[len(f.size)-1]++
-
 			case *diff.Modified:
 				savedSize := f.size[len(f.size)-1]
 				f.printRecursive(positionStr, matchedDelta.OldValue, AsciiDeleted)
 				f.size[len(f.size)-1] = savedSize
 				f.printRecursive(positionStr, matchedDelta.NewValue, AsciiAdded)
-
 			case *diff.TextDiff:
 				savedSize := f.size[len(f.size)-1]
 				f.printRecursive(positionStr, matchedDelta.OldValue, AsciiDeleted)
 				f.size[len(f.size)-1] = savedSize
 				f.printRecursive(positionStr, matchedDelta.NewValue, AsciiAdded)
-
 			case *diff.Deleted:
 				f.printRecursive(positionStr, matchedDelta.Value, AsciiDeleted)
-
 			case *diff.Moved:
 				fmt.Printf("processItem(): [%T]", matchedDelta)
 				f.printRecursive(matchedDelta.PrePosition().String(), matchedDelta.Value, AsciiDeleted)
 				f.printRecursive(matchedDelta.PostPosition().String(), matchedDelta.Value, AsciiAdded)
 				fmt.Printf("processItem(): *diff.Moved: not supported\n")
-
 			default:
 				err := fmt.Errorf("unknown Delta type [%T] detected", matchedDelta)
 				return errors.New(err.Error())
@@ -334,7 +312,6 @@ func (f *AsciiFormatter) printRecursive(name string, value interface{}, marker s
 			f.printRecursive(key, typedValue[key], marker)
 		}
 		f.pop()
-
 		f.newLine(marker)
 		f.print("}")
 		f.printComma()
@@ -351,7 +328,6 @@ func (f *AsciiFormatter) printRecursive(name string, value interface{}, marker s
 			f.printRecursive("", item, marker)
 		}
 		f.pop()
-
 		f.newLine(marker)
 		f.print("]")
 		f.printComma()
