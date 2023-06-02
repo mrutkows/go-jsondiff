@@ -76,7 +76,7 @@ func (f *AsciiFormatter) formatArray(left []interface{}, df diff.Diff) {
 func (f *AsciiFormatter) processArray(array []interface{}, deltas []diff.Delta) error {
 	patchedIndex := 0
 	for index, value := range array {
-		f.processItem(value, deltas, diff.Index(index))
+		f.processArrayOrObjectItem(value, deltas, diff.Index(index))
 		patchedIndex++
 	}
 
@@ -100,22 +100,22 @@ func (f *AsciiFormatter) processObject(object map[string]interface{}, deltas []d
 	names := sortedKeys(object)
 	for _, name := range names {
 		value := object[name]
-		f.processItem(value, deltas, diff.Name(name))
+		f.processArrayOrObjectItem(value, deltas, diff.Name(name))
 	}
 
 	// Added
 	for _, delta := range deltas {
-		switch delta.(type) {
+		switch deltaType := delta.(type) {
 		case *diff.Added:
-			d := delta.(*diff.Added)
-			f.printRecursive(d.Position.String(), d.Value, AsciiAdded)
+			//d := delta.(*diff.Added)
+			f.printRecursive(deltaType.Position.String(), deltaType.Value, AsciiAdded)
 		}
 	}
 
 	return nil
 }
 
-func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, position diff.Position) error {
+func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []diff.Delta, position diff.Position) error {
 	matchedDeltas := f.searchDeltas(deltas, position)
 	positionStr := position.String()
 	if len(matchedDeltas) > 0 {
@@ -123,20 +123,24 @@ func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, pos
 
 			switch matchedDelta := matchedDelta.(type) {
 			case *diff.Object:
-				switch value.(type) {
-				case map[string]interface{}:
-					//ok
-				default:
-					return errors.New("Type mismatch")
+				mapObject, ok := value.(map[string]interface{})
+				if !ok {
+					return fmt.Errorf("expected: map[string]interface{}: actual type: (%T)", value)
 				}
-				o := value.(map[string]interface{})
+				// switch valueType := value.(type) {
+				// case map[string]interface{}:
+				// 	//ok
+				// default:
+				// 	return fmt.Errorf("expected: map[string]interface{}: actual type: (%T)", valueType)
+				// }
+				//o := value.(map[string]interface{})
 
 				f.newLine(AsciiSame)
 				f.printKey(positionStr)
 				f.print("{")
 				f.closeLine()
-				f.push(positionStr, len(o), false)
-				f.processObject(o, matchedDelta.Deltas)
+				f.push(positionStr, len(mapObject), false)
+				f.processObject(mapObject, matchedDelta.Deltas)
 				f.pop()
 				f.newLine(AsciiSame)
 				f.print("}")
@@ -144,20 +148,25 @@ func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, pos
 				f.closeLine()
 
 			case *diff.Array:
-				switch value.(type) {
-				case []interface{}:
-					//ok
-				default:
-					return errors.New("Type mismatch")
+				// TODO: SHOULD test for slice type
+				interfaceSlice, ok := value.([]interface{})
+				if !ok {
+					return fmt.Errorf("expected: []interface{}: actual type: (%T)", value)
 				}
-				a := value.([]interface{})
+				// switch value.(type) {
+				// case []interface{}:
+				// 	//ok
+				// default:
+				// 	return errors.New("Type mismatch")
+				// }
+				// a := value.([]interface{})
 
 				f.newLine(AsciiSame)
 				f.printKey(positionStr)
 				f.print("[")
 				f.closeLine()
-				f.push(positionStr, len(a), true)
-				f.processArray(a, matchedDelta.Deltas)
+				f.push(positionStr, len(interfaceSlice), true)
+				f.processArray(interfaceSlice, matchedDelta.Deltas)
 				f.pop()
 				f.newLine(AsciiSame)
 				f.print("]")
@@ -205,13 +214,13 @@ func (f *AsciiFormatter) processItem(value interface{}, deltas []diff.Delta, pos
 func (f *AsciiFormatter) searchDeltas(deltas []diff.Delta, position diff.Position) (results []diff.Delta) {
 	results = make([]diff.Delta, 0)
 	for _, delta := range deltas {
-		switch delta.(type) {
+		switch deltaType := delta.(type) {
 		case diff.PostDelta:
-			if delta.(diff.PostDelta).PostPosition() == position {
+			if deltaType.PostPosition() == position {
 				results = append(results, delta)
 			}
 		case diff.PreDelta:
-			if delta.(diff.PreDelta).PrePosition() == position {
+			if deltaType.PrePosition() == position {
 				results = append(results, delta)
 			}
 		default:

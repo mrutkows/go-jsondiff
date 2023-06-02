@@ -2,7 +2,6 @@ package formatter
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	diff "github.com/mrutkows/go-jsondiff"
@@ -49,35 +48,35 @@ func (f *DeltaFormatter) FormatAsJson(diff diff.Diff) (json map[string]interface
 func (f *DeltaFormatter) formatObject(deltas []diff.Delta) (deltaJson map[string]interface{}, err error) {
 	deltaJson = map[string]interface{}{}
 	for _, delta := range deltas {
-		switch delta.(type) {
+		switch deltaType := delta.(type) {
 		case *diff.Object:
-			d := delta.(*diff.Object)
-			deltaJson[d.Position.String()], err = f.formatObject(d.Deltas)
+			//d := delta.(*diff.Object)
+			deltaJson[deltaType.Position.String()], err = f.formatObject(deltaType.Deltas)
 			if err != nil {
 				return nil, err
 			}
 		case *diff.Array:
-			d := delta.(*diff.Array)
-			deltaJson[d.Position.String()], err = f.formatArray(d.Deltas)
+			//d := delta.(*diff.Array)
+			deltaJson[deltaType.Position.String()], err = f.formatArray(deltaType.Deltas)
 			if err != nil {
 				return nil, err
 			}
 		case *diff.Added:
-			d := delta.(*diff.Added)
-			deltaJson[d.PostPosition().String()] = []interface{}{d.Value}
+			//d := delta.(*diff.Added)
+			deltaJson[deltaType.PostPosition().String()] = []interface{}{deltaType.Value}
 		case *diff.Modified:
-			d := delta.(*diff.Modified)
-			deltaJson[d.PostPosition().String()] = []interface{}{d.OldValue, d.NewValue}
+			//d := delta.(*diff.Modified)
+			deltaJson[deltaType.PostPosition().String()] = []interface{}{deltaType.OldValue, deltaType.NewValue}
 		case *diff.TextDiff:
-			d := delta.(*diff.TextDiff)
-			deltaJson[d.PostPosition().String()] = []interface{}{d.DiffString(), 0, DeltaTextDiff}
+			//d := delta.(*diff.TextDiff)
+			deltaJson[deltaType.PostPosition().String()] = []interface{}{deltaType.DiffString(), 0, DeltaTextDiff}
 		case *diff.Deleted:
-			d := delta.(*diff.Deleted)
-			deltaJson[d.PrePosition().String()] = []interface{}{d.Value, 0, DeltaDelete}
+			//d := delta.(*diff.Deleted)
+			deltaJson[deltaType.PrePosition().String()] = []interface{}{deltaType.Value, 0, DeltaDelete}
 		case *diff.Moved:
-			return nil, errors.New("Delta type 'Move' is not supported in objects")
+			return nil, fmt.Errorf("delta type '%T' is not supported in objects", deltaType)
 		default:
-			return nil, errors.New(fmt.Sprintf("Unknown Delta type detected: %#v", delta))
+			return nil, fmt.Errorf("unknown Delta type detected: %T", deltaType)
 		}
 	}
 	return
@@ -88,36 +87,36 @@ func (f *DeltaFormatter) formatArray(deltas []diff.Delta) (deltaJson map[string]
 		"_t": "a",
 	}
 	for _, delta := range deltas {
-		switch delta.(type) {
+		switch deltaType := delta.(type) {
 		case *diff.Object:
-			d := delta.(*diff.Object)
-			deltaJson[d.Position.String()], err = f.formatObject(d.Deltas)
+			//d := delta.(*diff.Object)
+			deltaJson[deltaType.Position.String()], err = f.formatObject(deltaType.Deltas)
 			if err != nil {
 				return nil, err
 			}
 		case *diff.Array:
-			d := delta.(*diff.Array)
-			deltaJson[d.Position.String()], err = f.formatArray(d.Deltas)
+			//d := delta.(*diff.Array)
+			deltaJson[deltaType.Position.String()], err = f.formatArray(deltaType.Deltas)
 			if err != nil {
 				return nil, err
 			}
 		case *diff.Added:
-			d := delta.(*diff.Added)
-			deltaJson[d.PostPosition().String()] = []interface{}{d.Value}
+			//d := delta.(*diff.Added)
+			deltaJson[deltaType.PostPosition().String()] = []interface{}{deltaType.Value}
 		case *diff.Modified:
-			d := delta.(*diff.Modified)
-			deltaJson[d.PostPosition().String()] = []interface{}{d.OldValue, d.NewValue}
+			//d := delta.(*diff.Modified)
+			deltaJson[deltaType.PostPosition().String()] = []interface{}{deltaType.OldValue, deltaType.NewValue}
 		case *diff.TextDiff:
-			d := delta.(*diff.TextDiff)
-			deltaJson[d.PostPosition().String()] = []interface{}{d.DiffString(), 0, DeltaTextDiff}
+			//d := delta.(*diff.TextDiff)
+			deltaJson[deltaType.PostPosition().String()] = []interface{}{deltaType.DiffString(), 0, DeltaTextDiff}
 		case *diff.Deleted:
-			d := delta.(*diff.Deleted)
-			deltaJson["_"+d.PrePosition().String()] = []interface{}{d.Value, 0, DeltaDelete}
+			//d := delta.(*diff.Deleted)
+			deltaJson["_"+deltaType.PrePosition().String()] = []interface{}{deltaType.Value, 0, DeltaDelete}
 		case *diff.Moved:
-			d := delta.(*diff.Moved)
-			deltaJson["_"+d.PrePosition().String()] = []interface{}{"", d.PostPosition(), DeltaMove}
+			//d := delta.(*diff.Moved)
+			deltaJson["_"+deltaType.PrePosition().String()] = []interface{}{"", deltaType.PostPosition(), DeltaMove}
 		default:
-			return nil, errors.New(fmt.Sprintf("Unknown Delta type detected: %#v", delta))
+			return nil, fmt.Errorf("unknown Delta type detected: %T", deltaType)
 		}
 	}
 	return
