@@ -16,10 +16,16 @@ const (
 	AsciiMoved   = "=>"
 )
 
+// ANSI color variants
+const (
+	NORMAL = "m"
+	BRIGHT = "1m"
+)
+
 var AsciiStyles = map[string]string{
 	AsciiDeleted: "30;41", // background red
 	AsciiAdded:   "30;42", // background green
-	AsciiMoved:   "30;44", // background yellow
+	AsciiMoved:   "30;45", // background yellow
 }
 
 func NewAsciiFormatter(left interface{}, config AsciiFormatterConfig) *AsciiFormatter {
@@ -253,7 +259,7 @@ func (f *AsciiFormatter) newLine(marker string) {
 func (f *AsciiFormatter) closeLine() {
 	style, ok := AsciiStyles[f.line.marker]
 	if f.config.Coloring && ok {
-		f.buffer.WriteString("\x1b[" + style + "m")
+		f.buffer.WriteString("\x1b[" + style + BRIGHT)
 	}
 
 	f.buffer.WriteString(f.line.marker)
