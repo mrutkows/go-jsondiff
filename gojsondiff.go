@@ -330,7 +330,8 @@ func (differ *Differ) maximizeSimilarities(left []maybe, right []maybe) (resultD
 			prevY := dpTable[x][y+1]
 			score := deltaTable[x][y].Similarity() + dpTable[x+1][y+1]
 
-			dpTable[x][y] = maxFloat64(prevX, prevY, score)
+			//dpTable[x][y] = maxFloat64(prevX, prevY, score)
+			dpTable[x][y] = maxVariadic(prevX, prevY, score)
 		}
 	}
 
@@ -413,15 +414,15 @@ func sortedKeys(m map[string]interface{}) (keys []string) {
 }
 
 // TODO: does not need to be variadic for current impl. needs (needs 3 exact)
-func maxFloat64(first float64, rest ...float64) (max float64) {
-	max = first
-	for _, value := range rest {
-		if max < value {
-			max = value
-		}
-	}
-	return max
-}
+// func maxFloat64(first float64, rest ...float64) (max float64) {
+// 	max = first
+// 	for _, value := range rest {
+// 		if max < value {
+// 			max = value
+// 		}
+// 	}
+// 	return max
+// }
 
 // TODO: does not need to be variadic for current impl. needs (needs 3 exact)
 func maxInt(first int, rest ...int) (max int) {

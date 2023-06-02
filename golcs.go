@@ -27,10 +27,10 @@ type Lcs interface {
 	// Left returns one of the two arrays to be compared.
 	Left() (leftValues []interface{})
 	// Right returns the other of the two arrays to be compared.
-	Right() (righttValues []interface{})
+	Right() (rightValues []interface{})
 }
 
-// IndexPair represents an pair of indeices in the Left and Right arrays found in the LCS value.
+// IndexPair represents an pair of indices in the Left and Right arrays found in the LCS value.
 type IndexPair struct {
 	Left  int
 	Right int

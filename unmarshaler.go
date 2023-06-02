@@ -2,7 +2,7 @@ package gojsondiff
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io"
 	"strconv"
 
@@ -77,12 +77,12 @@ func process(position Position, object interface{}) (Delta, error) {
 					var dd interface{}
 					var i int
 					for i, dd = range deltas {
-						switch dd.(type) {
-						case *Moved:
+						switch ddType := dd.(type) {
+						case *Moved: // TODO: <== this is a NO-OP in Golang (no fallthrough); why is it here?
+							fmt.Printf("[WARNING] unmarshaller: process(): unhandled case: Type=`%T`", ddType)
 						case PostDelta:
-							pd := dd.(PostDelta)
-							if moved.PostPosition() == pd.PostPosition() {
-								moved.Delta = pd
+							if moved.PostPosition() == ddType.PostPosition() {
+								moved.Delta = ddType
 								deltas = append(deltas[:i], deltas[i+1:]...)
 							}
 						}
@@ -123,7 +123,7 @@ func process(position Position, object interface{}) (Delta, error) {
 			case float64(3):
 				delta = NewMoved(position, Index(int(o[1].(float64))), nil, nil)
 			default:
-				return nil, errors.New("Unknown delta type")
+				return nil, fmt.Errorf("unknown delta type (%T) for value: `%v`", o[2], o[2])
 			}
 		}
 	}
