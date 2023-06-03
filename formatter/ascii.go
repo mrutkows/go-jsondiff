@@ -19,7 +19,7 @@ const (
 // ANSI color variants
 const (
 	NORMAL = "m"
-	BRIGHT = "1m"
+	BRIGHT = ";1m"
 )
 
 var AsciiStyles = map[string]string{
