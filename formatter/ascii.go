@@ -199,6 +199,7 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 
 				if mapOriginal, ok := value.(map[string]interface{}); ok {
 					fmt.Printf("YUP: %T\n", mapOriginal)
+					f.printRecursive(positionStr, value, AsciiSame)
 				} else {
 					fmt.Printf("NOPE: %T\n", value)
 				}
