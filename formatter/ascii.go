@@ -25,7 +25,7 @@ const (
 var AsciiStyles = map[string]string{
 	AsciiDeleted: "30;41", // background red
 	AsciiAdded:   "30;42", // background green
-	AsciiMoved:   "30;45", // background yellow
+	AsciiMoved:   "30;43", // background yellow
 }
 
 func NewAsciiFormatter(left interface{}, config AsciiFormatterConfig) *AsciiFormatter {
@@ -137,10 +137,11 @@ func (f *AsciiFormatter) processObject(object map[string]interface{}, deltas []d
 func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []diff.Delta, position diff.Position) error {
 	matchedDeltas := f.searchDeltas(deltas, position)
 	positionStr := position.String()
-	if len(matchedDeltas) > 0 {
+	numDeltaMatches := len(matchedDeltas)
+	if numDeltaMatches > 0 {
 		for _, matchedDelta := range matchedDeltas {
 
-			switch matchedDelta := matchedDelta.(type) {
+			switch matchedDeltaType := matchedDelta.(type) {
 			case *diff.Object:
 				mapObject, ok := value.(map[string]interface{})
 				if !ok {
@@ -151,7 +152,7 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				f.print("{")
 				f.closeLine()
 				f.push(positionStr, len(mapObject), false)
-				f.processObject(mapObject, matchedDelta.Deltas)
+				f.processObject(mapObject, matchedDeltaType.Deltas)
 				f.pop()
 				f.newLine(AsciiSame)
 				f.print("}")
@@ -168,7 +169,7 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				f.print("[")
 				f.closeLine()
 				f.push(positionStr, len(interfaceSlice), true)
-				f.processArray(interfaceSlice, matchedDelta.Deltas)
+				f.processArray(interfaceSlice, matchedDeltaType.Deltas)
 				f.pop()
 				f.newLine(AsciiSame)
 				f.print("]")
@@ -176,27 +177,33 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				f.closeLine()
 
 			case *diff.Added:
-				f.printRecursive(positionStr, matchedDelta.Value, AsciiAdded)
+				f.printRecursive(positionStr, matchedDeltaType.Value, AsciiAdded)
 				f.size[len(f.size)-1]++
 			case *diff.Modified:
 				savedSize := f.size[len(f.size)-1]
-				f.printRecursive(positionStr, matchedDelta.OldValue, AsciiDeleted)
+				f.printRecursive(positionStr, matchedDeltaType.OldValue, AsciiDeleted)
 				f.size[len(f.size)-1] = savedSize
-				f.printRecursive(positionStr, matchedDelta.NewValue, AsciiAdded)
+				f.printRecursive(positionStr, matchedDeltaType.NewValue, AsciiAdded)
 			case *diff.TextDiff:
 				savedSize := f.size[len(f.size)-1]
-				f.printRecursive(positionStr, matchedDelta.OldValue, AsciiDeleted)
+				f.printRecursive(positionStr, matchedDeltaType.OldValue, AsciiDeleted)
 				f.size[len(f.size)-1] = savedSize
-				f.printRecursive(positionStr, matchedDelta.NewValue, AsciiAdded)
+				f.printRecursive(positionStr, matchedDeltaType.NewValue, AsciiAdded)
 			case *diff.Deleted:
-				f.printRecursive(positionStr, matchedDelta.Value, AsciiDeleted)
+				f.printRecursive(positionStr, matchedDeltaType.Value, AsciiDeleted)
 			case *diff.Moved:
-				fmt.Printf("processItem(): valueType: [%T], matchedDelta type: [%T]", value, matchedDelta)
-				f.printRecursive(matchedDelta.PrePosition().String(), matchedDelta.Value, AsciiMoved)
-				//f.printRecursive(matchedDelta.PostPosition().String(), matchedDelta.Value, AsciiAdded)
-				//fmt.Printf("processItem(): *diff.Moved: not supported\n")
+				fmt.Printf("processItem(): valueType: [%T], matchedDelta type: [%T]", value, matchedDeltaType)
+				movedString := fmt.Sprintf("%s%s%s", matchedDeltaType.PrePosition().String(), AsciiMoved, matchedDeltaType.PostPosition().String())
+				f.printRecursive(movedString, matchedDeltaType.Value, AsciiMoved)
+
+				if mapOriginal, ok := value.(map[string]interface{}); ok {
+					fmt.Printf("YUP: %T", mapOriginal)
+				} else {
+					fmt.Printf("NOPE: %T", value)
+				}
+
 			default:
-				err := fmt.Errorf("unknown Delta type [%T] detected", matchedDelta)
+				err := fmt.Errorf("unknown Delta type [%T] detected", matchedDeltaType)
 				return errors.New(err.Error())
 			}
 
@@ -259,7 +266,7 @@ func (f *AsciiFormatter) newLine(marker string) {
 func (f *AsciiFormatter) closeLine() {
 	style, ok := AsciiStyles[f.line.marker]
 	if f.config.Coloring && ok {
-		f.buffer.WriteString("\x1b[" + style + BRIGHT)
+		f.buffer.WriteString("\x1b[" + style + NORMAL)
 	}
 
 	f.buffer.WriteString(f.line.marker)
