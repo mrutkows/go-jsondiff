@@ -13,7 +13,8 @@ const (
 	AsciiSame    = " "
 	AsciiAdded   = "+"
 	AsciiDeleted = "-"
-	AsciiMoved   = "=>"
+	AsciiMoved   = "-+"
+	Moved        = "=>"
 )
 
 // ANSI color variants
@@ -193,13 +194,13 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				f.printRecursive(positionStr, matchedDeltaType.Value, AsciiDeleted)
 			case *diff.Moved:
 				fmt.Printf("processItem(): valueType: [%T], matchedDelta type: [%T]", value, matchedDeltaType)
-				movedString := fmt.Sprintf("%s%s%s", matchedDeltaType.PrePosition().String(), AsciiMoved, matchedDeltaType.PostPosition().String())
+				movedString := fmt.Sprintf("%s%s%s", matchedDeltaType.PrePosition().String(), Moved, matchedDeltaType.PostPosition().String())
 				f.printRecursive(movedString, matchedDeltaType.Value, AsciiMoved)
 
 				if mapOriginal, ok := value.(map[string]interface{}); ok {
-					fmt.Printf("YUP: %T", mapOriginal)
+					fmt.Printf("YUP: %T\n", mapOriginal)
 				} else {
-					fmt.Printf("NOPE: %T", value)
+					fmt.Printf("NOPE: %T\n", value)
 				}
 
 			default:
