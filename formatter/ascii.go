@@ -139,6 +139,9 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 	matchedDeltas := f.searchDeltas(deltas, position)
 	positionStr := position.String()
 	numDeltaMatches := len(matchedDeltas)
+
+	fmt.Printf("BEFORE: f.size[]: %v\n", f.size)
+
 	if numDeltaMatches > 0 {
 		for _, matchedDelta := range matchedDeltas {
 
@@ -213,6 +216,8 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 	} else {
 		f.printRecursive(positionStr, value, AsciiSame)
 	}
+
+	fmt.Printf("AFTER: f.size[]: %v\n", f.size)
 
 	return nil
 }
