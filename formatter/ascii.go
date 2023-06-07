@@ -95,27 +95,12 @@ func (f *AsciiFormatter) formatArray(left []interface{}, df diff.Diff) {
 	f.addLineWith(AsciiSame, "]")
 }
 
-// func sortArrayKeys(keys []interface{}) {
-// 	// Sort by license key (i.e., one of `id`, `name` or `expression`)
-// 	sort.Slice(keys, func(i, j int) bool {
-// 		return keys[i].(string) < keys[j].(string)
-// 	})
-// }
-
 func (f *AsciiFormatter) processArray(array []interface{}, deltas []diff.Delta) (err error) {
 
 	err = f.preProcessArray(array, deltas)
 	if err != nil {
 		return
 	}
-
-	// Sort post-Delta slice position keys
-	//sortedKeys := postPositionMap.keys()
-	//sortArrayKeys(sortedKeys)
-
-	// for key, value := range sortedKeys {
-	// 	fmt.Printf("[%s]: `%T`\n", key, value)
-	// }
 
 	patchedIndex := 0
 	for index, value := range array {
@@ -141,10 +126,9 @@ func (f *AsciiFormatter) processArray(array []interface{}, deltas []diff.Delta) 
 
 func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delta) (err error) {
 
-	//postDeltaMap = slicemultimap.New()
-	//postDeltaMap = make(map[string]interface{})
 	postDeltaMap := orderedmap.New[string, interface{}]()
 
+	// initialize the map to pre delta entries
 	for i, value := range slice {
 
 		key := diff.Name(strconv.Itoa(i))
@@ -154,10 +138,30 @@ func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delt
 
 	}
 
-	// TODO process deltas by type... add, delete, moved
+	// process deltas by type... add, delete, moved
+	for _, delta := range deltas {
+
+		switch deltaType := delta.(type) {
+		case *diff.Added:
+			// insert value at "post"
+			fmt.Printf("[%T]: PostPosition(): %s", delta, deltaType.PostPosition())
+		case *diff.Deleted:
+			fmt.Printf("[%T]: PrePosition(): %s", delta, deltaType.PrePosition())
+		case *diff.Moved:
+			// delete value at "pre" (key) insert value at "post" (key)
+			// if pre == post then skip (trace message)
+			fmt.Printf("[%T]: PostPosition(): %s", delta, deltaType.PostPosition())
+		case *diff.Displaced:
+			fmt.Printf("[%T]: PrePosition(): %s", delta, deltaType.PrePosition())
+		default:
+			err = fmt.Errorf("unknown delta type: [%T]", delta)
+		}
+
+	}
+
 	for kv := postDeltaMap.Oldest(); kv != nil; kv = kv.Next() {
 		fmt.Printf("[%s]: %v (%T)\n", kv.Key, kv.Value, kv.Value)
-	} // prints:
+	}
 
 	return
 }

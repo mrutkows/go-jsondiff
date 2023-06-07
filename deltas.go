@@ -463,7 +463,8 @@ func (d *Moved) similarity() (similarity float64) {
 }
 
 type Displaced struct {
-	preDelta
+	preDelta        // struct{ Position }; Position interface
+	similarityCache // Delta interface
 
 	// The value before moving
 	Value interface{}
