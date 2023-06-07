@@ -4,7 +4,9 @@
         "gojsondiff",
         "jsondiff",
         "jsondiffpatch",
+        "orderedmap",
         "sergi",
+        "slicemultimap",
         "Unmarshaller"
     ]
 }

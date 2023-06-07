@@ -461,3 +461,21 @@ func (d *Moved) similarity() (similarity float64) {
 	similarity += 0.4 * ratio
 	return
 }
+
+type Displaced struct {
+	preDelta
+
+	// The value before moving
+	Value interface{}
+	// The delta applied after moving (for compatibility)
+	Delta interface{}
+}
+
+func NewDisplaced(prePosition Position, value interface{}, delta Delta) *Displaced {
+	d := Displaced{
+		preDelta: preDelta{prePosition},
+		Value:    value,
+		Delta:    delta,
+	}
+	return &d
+}

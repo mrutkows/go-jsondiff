@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 
 	diff "github.com/mrutkows/go-jsondiff"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 const (
@@ -93,7 +95,28 @@ func (f *AsciiFormatter) formatArray(left []interface{}, df diff.Diff) {
 	f.addLineWith(AsciiSame, "]")
 }
 
-func (f *AsciiFormatter) processArray(array []interface{}, deltas []diff.Delta) error {
+// func sortArrayKeys(keys []interface{}) {
+// 	// Sort by license key (i.e., one of `id`, `name` or `expression`)
+// 	sort.Slice(keys, func(i, j int) bool {
+// 		return keys[i].(string) < keys[j].(string)
+// 	})
+// }
+
+func (f *AsciiFormatter) processArray(array []interface{}, deltas []diff.Delta) (err error) {
+
+	err = f.preProcessArray(array, deltas)
+	if err != nil {
+		return
+	}
+
+	// Sort post-Delta slice position keys
+	//sortedKeys := postPositionMap.keys()
+	//sortArrayKeys(sortedKeys)
+
+	// for key, value := range sortedKeys {
+	// 	fmt.Printf("[%s]: `%T`\n", key, value)
+	// }
+
 	patchedIndex := 0
 	for index, value := range array {
 		f.processArrayOrObjectItem(value, deltas, diff.Index(index))
@@ -116,6 +139,29 @@ func (f *AsciiFormatter) processArray(array []interface{}, deltas []diff.Delta) 
 	return nil
 }
 
+func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delta) (err error) {
+
+	//postDeltaMap = slicemultimap.New()
+	//postDeltaMap = make(map[string]interface{})
+	postDeltaMap := orderedmap.New[string, interface{}]()
+
+	for i, value := range slice {
+
+		key := diff.Name(strconv.Itoa(i))
+		entry := diff.NewDisplaced(key, value, nil)
+
+		postDeltaMap.Set(key.String(), entry)
+
+	}
+
+	// TODO process deltas by type... add, delete, moved
+	for kv := postDeltaMap.Oldest(); kv != nil; kv = kv.Next() {
+		fmt.Printf("[%s]: %v (%T)\n", kv.Key, kv.Value, kv.Value)
+	} // prints:
+
+	return
+}
+
 func (f *AsciiFormatter) processObject(object map[string]interface{}, deltas []diff.Delta) error {
 	names := sortedKeys(object)
 	for _, name := range names {
@@ -127,7 +173,6 @@ func (f *AsciiFormatter) processObject(object map[string]interface{}, deltas []d
 	for _, delta := range deltas {
 		switch deltaType := delta.(type) {
 		case *diff.Added:
-			//d := delta.(*diff.Added)
 			f.printRecursive(deltaType.Position.String(), deltaType.Value, AsciiAdded)
 		}
 	}
