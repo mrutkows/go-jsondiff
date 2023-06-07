@@ -144,15 +144,15 @@ func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delt
 		switch deltaType := delta.(type) {
 		case *diff.Added:
 			// insert value at "post"
-			fmt.Printf("[%T]: PostPosition(): %s", delta, deltaType.PostPosition())
+			fmt.Printf("[%T]: PostPosition(): %s\n", delta, deltaType.PostPosition())
 		case *diff.Deleted:
-			fmt.Printf("[%T]: PrePosition(): %s", delta, deltaType.PrePosition())
+			fmt.Printf("[%T]: PrePosition(): %s\n", delta, deltaType.PrePosition())
 		case *diff.Moved:
 			// delete value at "pre" (key) insert value at "post" (key)
 			// if pre == post then skip (trace message)
-			fmt.Printf("[%T]: PostPosition(): %s", delta, deltaType.PostPosition())
+			fmt.Printf("[%T]: PostPosition(): %s\n", delta, deltaType.PostPosition())
 		case *diff.Displaced:
-			fmt.Printf("[%T]: PrePosition(): %s", delta, deltaType.PrePosition())
+			fmt.Printf("[%T]: PrePosition(): %s\n", delta, deltaType.PrePosition())
 		default:
 			err = fmt.Errorf("unknown delta type: [%T]", delta)
 		}
