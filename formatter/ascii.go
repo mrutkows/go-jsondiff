@@ -147,9 +147,11 @@ func (f *AsciiFormatter) createOrderedArrayMap(slice []interface{}, deltas []dif
 			// insert value at "post"
 			fmt.Printf("[%T]: PostPosition(): %v, Value: : %+v\n", delta, deltaType.PostPosition(), deltaType.Value)
 			postPosition := deltaType.PostPosition().String()
-			displacedMapEntry, present := postDeltaMap.Delete(postPosition)
+			// overwrite any pre-existing value
+			displacedMapEntry, present := postDeltaMap.Set(postPosition, deltaType)
 			fmt.Printf(">> a) Deleted [\"%v\"] \n", deltaType.PostPosition())
 
+			// displace the pre-existing value
 			if present {
 				fmt.Printf("  >> pre-existing value found [%T]: %+v\n", displacedMapEntry, displacedMapEntry)
 				floatKey, err = strconv.ParseFloat(postPosition, 64)
@@ -164,13 +166,12 @@ func (f *AsciiFormatter) createOrderedArrayMap(slice []interface{}, deltas []dif
 			}
 
 		case *diff.Deleted: // Deleted objects still appear in output, so are a
-			fmt.Printf("[%T]: PrePosition(): %v, Value: : %+v\n", delta, deltaType.PrePosition(), deltaType.Value)
+			fmt.Printf("[%T]: PrePosition(): %v, Value: [%T] %+v\n", delta, deltaType.PrePosition(), deltaType.Value, deltaType.Value)
 			prePosition := deltaType.PrePosition().String()
-			deletedMapEntry, present := postDeltaMap.Delete(prePosition)
+			deletedMapEntry, present := postDeltaMap.Set(prePosition, deltaType)
 			if present {
 				fmt.Printf("  >> pre-existing value found: [%T]: %+v\n", deletedMapEntry, deletedMapEntry)
 				// TODO: verify delta and entry match...
-				postDeltaMap.Set(prePosition, deltaType)
 			}
 		case *diff.Moved:
 			prePosition := deltaType.PrePosition().String()
