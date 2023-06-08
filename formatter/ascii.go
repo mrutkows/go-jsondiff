@@ -39,13 +39,13 @@ func NewAsciiFormatter(left interface{}, config AsciiFormatterConfig) *AsciiForm
 }
 
 type AsciiFormatter struct {
-	left    interface{}
-	config  AsciiFormatterConfig
-	buffer  *bytes.Buffer
-	path    []string
-	size    []int
-	inArray []bool
-	line    *AsciiLine
+	left                      interface{}
+	config                    AsciiFormatterConfig
+	buffer                    *bytes.Buffer
+	jsonObjectPath            []string
+	jsonObjectUnprocessedSize []int
+	inArray                   []bool
+	line                      *AsciiLine
 }
 
 type AsciiFormatterConfig struct {
@@ -63,8 +63,8 @@ type AsciiLine struct {
 
 func (f *AsciiFormatter) Format(diff diff.Diff) (result string, err error) {
 	f.buffer = bytes.NewBuffer([]byte{})
-	f.path = []string{}
-	f.size = []int{}
+	f.jsonObjectPath = []string{}
+	f.jsonObjectUnprocessedSize = []int{}
 	f.inArray = []bool{}
 
 	if v, ok := f.left.(map[string]interface{}); ok {
@@ -128,7 +128,7 @@ func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delt
 
 	postDeltaMap := orderedmap.New[string, interface{}]()
 
-	// initialize the map to pre delta entries
+	// initialize the map to pre-delta entries
 	for position, value := range slice {
 		preDeltaPosition := diff.Name(strconv.Itoa(position))
 		entry := diff.NewDisplaced(preDeltaPosition, value, nil) // NOTE: if diff.Displaced NOT used, then we could use float32 as key
@@ -139,7 +139,7 @@ func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delt
 	for _, delta := range deltas {
 
 		switch deltaType := delta.(type) {
-		case *diff.Added:
+		case *diff.Added: // Added objects "displace" the existing in the slice order (and those entries after)
 			// insert value at "post"
 			fmt.Printf("[%T]: PostPosition(): %s\n", delta, deltaType.PostPosition())
 			postPosition := deltaType.PostPosition().String()
@@ -159,7 +159,7 @@ func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delt
 				postDeltaMap.Set(newPosition, oldValue)
 			}
 
-		case *diff.Deleted:
+		case *diff.Deleted: // Deleted objects still appear in output, so are a
 			fmt.Printf("[%T]: PrePosition(): %s\n", delta, deltaType.PrePosition())
 		case *diff.Moved:
 			// delete value at "pre" (key) insert value at "post" (key)
@@ -200,7 +200,7 @@ func (f *AsciiFormatter) processObject(object map[string]interface{}, deltas []d
 
 func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []diff.Delta, position diff.Position) error {
 	matchedDeltas := f.searchDeltas(deltas, position)
-	positionStr := position.String()
+	objectKey := position.String()
 	numDeltaMatches := len(matchedDeltas)
 
 	//fmt.Printf("BEFORE: f.size[]: %v\n", f.size)
@@ -215,10 +215,10 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 					return fmt.Errorf("expected: map[string]interface{}: actual type: (%T)", value)
 				}
 				f.newLine(AsciiSame)
-				f.printKey(positionStr)
+				f.printKey(objectKey)
 				f.print("{")
 				f.closeLine()
-				f.push(positionStr, len(mapObject), false)
+				f.push(objectKey, len(mapObject), false)
 				f.processObject(mapObject, matchedDeltaType.Deltas)
 				f.pop()
 				f.newLine(AsciiSame)
@@ -232,10 +232,10 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 					return fmt.Errorf("expected: []interface{}: actual type: (%T)", value)
 				}
 				f.newLine(AsciiSame)
-				f.printKey(positionStr)
+				f.printKey(objectKey)
 				f.print("[")
 				f.closeLine()
-				f.push(positionStr, len(interfaceSlice), true)
+				f.push(objectKey, len(interfaceSlice), true)
 				f.processArray(interfaceSlice, matchedDeltaType.Deltas)
 				f.pop()
 				f.newLine(AsciiSame)
@@ -244,27 +244,27 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				f.closeLine()
 
 			case *diff.Added:
-				f.printRecursive(positionStr, matchedDeltaType.Value, AsciiAdded)
-				f.size[len(f.size)-1]++
+				f.printRecursive(objectKey, matchedDeltaType.Value, AsciiAdded)
+				f.jsonObjectUnprocessedSize[len(f.jsonObjectUnprocessedSize)-1]++
 			case *diff.Modified:
-				savedSize := f.size[len(f.size)-1]
-				f.printRecursive(positionStr, matchedDeltaType.OldValue, AsciiDeleted)
-				f.size[len(f.size)-1] = savedSize
-				f.printRecursive(positionStr, matchedDeltaType.NewValue, AsciiAdded)
+				savedSize := f.jsonObjectUnprocessedSize[len(f.jsonObjectUnprocessedSize)-1]
+				f.printRecursive(objectKey, matchedDeltaType.OldValue, AsciiDeleted)
+				f.jsonObjectUnprocessedSize[len(f.jsonObjectUnprocessedSize)-1] = savedSize
+				f.printRecursive(objectKey, matchedDeltaType.NewValue, AsciiAdded)
 			case *diff.TextDiff:
-				savedSize := f.size[len(f.size)-1]
-				f.printRecursive(positionStr, matchedDeltaType.OldValue, AsciiDeleted)
-				f.size[len(f.size)-1] = savedSize
-				f.printRecursive(positionStr, matchedDeltaType.NewValue, AsciiAdded)
+				savedSize := f.jsonObjectUnprocessedSize[len(f.jsonObjectUnprocessedSize)-1]
+				f.printRecursive(objectKey, matchedDeltaType.OldValue, AsciiDeleted)
+				f.jsonObjectUnprocessedSize[len(f.jsonObjectUnprocessedSize)-1] = savedSize
+				f.printRecursive(objectKey, matchedDeltaType.NewValue, AsciiAdded)
 			case *diff.Deleted:
-				f.printRecursive(positionStr, matchedDeltaType.Value, AsciiDeleted)
+				f.printRecursive(objectKey, matchedDeltaType.Value, AsciiDeleted)
 			case *diff.Moved:
 				fmt.Printf("processItem(): valueType: [%T], matchedDelta type: [%T]\n", value, matchedDeltaType)
 				movedString := fmt.Sprintf("%s%s%s", matchedDeltaType.PrePosition().String(), Moved, matchedDeltaType.PostPosition().String())
 				f.printRecursive(movedString, matchedDeltaType.Value, AsciiMoved)
 
 				if _, ok := value.(map[string]interface{}); ok {
-					f.printRecursive(positionStr, value, AsciiSame)
+					f.printRecursive(objectKey, value, AsciiSame)
 				} else {
 					fmt.Printf("unexpected type for diff.Move: %T\n", value)
 				}
@@ -276,7 +276,7 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 
 		}
 	} else {
-		f.printRecursive(positionStr, value, AsciiSame)
+		f.printRecursive(objectKey, value, AsciiSame)
 	}
 
 	//fmt.Printf("AFTER: f.size[]: %v\n", f.size)
@@ -304,21 +304,21 @@ func (f *AsciiFormatter) searchDeltas(deltas []diff.Delta, position diff.Positio
 }
 
 func (f *AsciiFormatter) push(name string, size int, array bool) {
-	f.path = append(f.path, name)
-	f.size = append(f.size, size)
+	f.jsonObjectPath = append(f.jsonObjectPath, name)
+	f.jsonObjectUnprocessedSize = append(f.jsonObjectUnprocessedSize, size)
 	f.inArray = append(f.inArray, array)
 }
 
 func (f *AsciiFormatter) pop() {
-	f.path = f.path[0 : len(f.path)-1]
-	f.size = f.size[0 : len(f.size)-1]
+	f.jsonObjectPath = f.jsonObjectPath[0 : len(f.jsonObjectPath)-1]
+	f.jsonObjectUnprocessedSize = f.jsonObjectUnprocessedSize[0 : len(f.jsonObjectUnprocessedSize)-1]
 	f.inArray = f.inArray[0 : len(f.inArray)-1]
 }
 
 func (f *AsciiFormatter) addLineWith(marker string, value string) {
 	f.line = &AsciiLine{
 		marker: marker,
-		indent: len(f.path),
+		indent: len(f.jsonObjectPath),
 		buffer: bytes.NewBufferString(value),
 	}
 	f.closeLine()
@@ -327,7 +327,7 @@ func (f *AsciiFormatter) addLineWith(marker string, value string) {
 func (f *AsciiFormatter) newLine(marker string) {
 	f.line = &AsciiLine{
 		marker: marker,
-		indent: len(f.path),
+		indent: len(f.jsonObjectPath),
 		buffer: bytes.NewBuffer([]byte{}),
 	}
 }
@@ -360,8 +360,11 @@ func (f *AsciiFormatter) printKey(name string) {
 }
 
 func (f *AsciiFormatter) printComma() {
-	f.size[len(f.size)-1]--
-	if f.size[len(f.size)-1] > 0 {
+	// Decrement remaining the (array) length as the action of printing a comma indicates
+	// one less remaining object to emit.
+	f.jsonObjectUnprocessedSize[len(f.jsonObjectUnprocessedSize)-1]--
+	// As long as we have more elements to output in JSON the array, emit a comma
+	if f.jsonObjectUnprocessedSize[len(f.jsonObjectUnprocessedSize)-1] > 0 {
 		f.line.buffer.WriteRune(',')
 	}
 }
