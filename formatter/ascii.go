@@ -296,11 +296,11 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				movedString := fmt.Sprintf("%s%s%s", matchedDeltaType.PrePosition().String(), Moved, matchedDeltaType.PostPosition().String())
 				f.printRecursive(movedString, matchedDeltaType.Value, AsciiMoved)
 
-				if _, ok := value.(map[string]interface{}); ok {
-					f.printRecursive(objectKey, value, AsciiSame)
-				} else {
-					fmt.Printf("unexpected type for diff.Move: %T\n", value)
-				}
+				// if _, ok := value.(map[string]interface{}); ok {
+				// 	f.printRecursive(objectKey, value, AsciiSame)
+				// } else {
+				// 	fmt.Printf("unexpected type for diff.Move: %T\n", value)
+				// }
 
 			default:
 				err := fmt.Errorf("unknown Delta type [%T] detected", matchedDeltaType)
