@@ -147,14 +147,15 @@ func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delt
 			fmt.Printf(">> a) Deleted [\"%v\"] \n", deltaType.PostPosition())
 
 			if present {
-				fmt.Printf("  >> Found: OldValue: [\"%v\"] \n", oldValue)
+				fmt.Printf("  >> pre-existing value found at position: [\"%v\"] \n", postPosition)
 				floatNum, errConvert := strconv.ParseFloat(postPosition, 64)
 
 				if errConvert != nil {
 					return errConvert
 				}
-				floatNum = floatNum - 0.000001
+				floatNum = floatNum + 0.000001
 				newPosition := fmt.Sprintf("%f", floatNum)
+				fmt.Printf("  >> adding pre-existing value at new position: [\"%v\"] \n", newPosition)
 				postDeltaMap.Set(newPosition, oldValue)
 			}
 
