@@ -129,13 +129,10 @@ func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delt
 	postDeltaMap := orderedmap.New[string, interface{}]()
 
 	// initialize the map to pre delta entries
-	for i, value := range slice {
-
-		key := diff.Name(strconv.Itoa(i))
-		entry := diff.NewDisplaced(key, value, nil)
-
-		postDeltaMap.Set(key.String(), entry)
-
+	for position, value := range slice {
+		preDeltaPosition := diff.Name(strconv.Itoa(position))
+		entry := diff.NewDisplaced(preDeltaPosition, value, nil) // NOTE: if diff.Displaced NOT used, then we could use float32 as key
+		postDeltaMap.Set(preDeltaPosition.String(), entry)
 	}
 
 	// process deltas by type... add, delete, moved
@@ -145,6 +142,22 @@ func (f *AsciiFormatter) preProcessArray(slice []interface{}, deltas []diff.Delt
 		case *diff.Added:
 			// insert value at "post"
 			fmt.Printf("[%T]: PostPosition(): %s\n", delta, deltaType.PostPosition())
+			postPosition := deltaType.PostPosition().String()
+			oldValue, present := postDeltaMap.Delete(postPosition)
+			fmt.Printf(">> a) Deleted [\"%v\"] \n", deltaType.PostPosition())
+
+			if present {
+				fmt.Printf("  >> Found: OldValue: [\"%v\"] \n", oldValue)
+				floatNum, errConvert := strconv.ParseFloat(postPosition, 64)
+
+				if errConvert != nil {
+					return errConvert
+				}
+				floatNum = floatNum - 0.000001
+				newPosition := fmt.Sprintf("%f", floatNum)
+				postDeltaMap.Set(newPosition, oldValue)
+			}
+
 		case *diff.Deleted:
 			fmt.Printf("[%T]: PrePosition(): %s\n", delta, deltaType.PrePosition())
 		case *diff.Moved:
@@ -189,7 +202,7 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 	positionStr := position.String()
 	numDeltaMatches := len(matchedDeltas)
 
-	fmt.Printf("BEFORE: f.size[]: %v\n", f.size)
+	//fmt.Printf("BEFORE: f.size[]: %v\n", f.size)
 
 	if numDeltaMatches > 0 {
 		for _, matchedDelta := range matchedDeltas {
@@ -249,11 +262,10 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				movedString := fmt.Sprintf("%s%s%s", matchedDeltaType.PrePosition().String(), Moved, matchedDeltaType.PostPosition().String())
 				f.printRecursive(movedString, matchedDeltaType.Value, AsciiMoved)
 
-				if mapOriginal, ok := value.(map[string]interface{}); ok {
-					fmt.Printf("YUP: %T\n", mapOriginal)
+				if _, ok := value.(map[string]interface{}); ok {
 					f.printRecursive(positionStr, value, AsciiSame)
 				} else {
-					fmt.Printf("NOPE: %T\n", value)
+					fmt.Printf("unexpected type for diff.Move: %T\n", value)
 				}
 
 			default:
@@ -266,7 +278,7 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 		f.printRecursive(positionStr, value, AsciiSame)
 	}
 
-	fmt.Printf("AFTER: f.size[]: %v\n", f.size)
+	//fmt.Printf("AFTER: f.size[]: %v\n", f.size)
 
 	return nil
 }
