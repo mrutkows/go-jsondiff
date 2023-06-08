@@ -245,6 +245,7 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 
 			case *diff.Added:
 				f.printRecursive(objectKey, matchedDeltaType.Value, AsciiAdded)
+				f.printRecursive(objectKey, value, AsciiSame)
 				f.jsonObjectUnprocessedSize[len(f.jsonObjectUnprocessedSize)-1]++
 			case *diff.Modified:
 				savedSize := f.jsonObjectUnprocessedSize[len(f.jsonObjectUnprocessedSize)-1]
