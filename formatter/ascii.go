@@ -129,6 +129,7 @@ func (f *AsciiFormatter) createOrderedArrayMap(slice []interface{}, deltas []dif
 
 	var floatKey float64
 	postDeltaMap := orderedmap.New[string, interface{}]()
+	out = postDeltaMap
 
 	// initialize the map to pre-delta entries
 	for position, value := range slice {
