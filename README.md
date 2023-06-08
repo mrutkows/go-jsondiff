@@ -40,7 +40,7 @@ type Added struct {
 
 ```
 
-##### Notes: 
+##### Notes:
 
 - "add" operation has no "preDelta" value, only a "postDelta" value
 
@@ -54,7 +54,7 @@ a value was deleted, i.e. it had a value and is now undefined
 delta = [ oldValue, 0, 0 ]
 ```
 
-##### Notes: 
+##### Notes:
 
 - "delete" operation has no "postDelta" value, only a "preDelta" value
 
@@ -82,11 +82,11 @@ delta = {
   index5: innerDelta5
 }
 ```
- 
-##### Notes: 
+
+##### Notes:
 
 - only indices with "inner" deltas are included
-- `_t: 'a'`: this tag indicates the delta applies to an array, 
+- `_t: 'a'`: this tag indicates the delta applies to an array,
 	- if a regular object (or a value type) is found when patching, an error will be thrown
 
 internal representation:
@@ -104,8 +104,8 @@ an item was moved to a different position in the same array
 ```
 delta = [ '', destinationIndex, 3]
 ```
-     
-##### Notes: 
+
+##### Notes:
 
 - '': represents the moved item value (suppressed by default)
 - 3: indicates "array move"
@@ -212,3 +212,16 @@ This command shows:
   }
 }
 ```
+
+---
+
+## Credits
+
+This package is based upon a fork of https://github.com/yudai/gojsondiff and includes the LCS algorithm implemented in https://github.com/yudai/golcs.
+
+Creation of this derivative package was necessitated as both these package repositories (and their dependencies) have not been maintained for over 6 years with known bugs and vulnerabilities accumulating.
+
+Copies of the licenses from these originating projects are included here:
+
+- [licenses/yudai/gojsondoff/LICENSE](licenses/yudai/gojsondiff/LICENSE): MIT
+- [licenses/yudai/golcs/LICENSE](licenses/yudai/golcs/LICENSE): MIT
