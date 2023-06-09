@@ -5,10 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strconv"
 
 	diff "github.com/mrutkows/go-jsondiff"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 const (
@@ -97,11 +95,11 @@ func (f *AsciiFormatter) formatArray(left []interface{}, df diff.Diff) {
 
 func (f *AsciiFormatter) processArray(array []interface{}, deltas []diff.Delta) (err error) {
 
-	orderedMap, errOrder := f.createOrderedArrayMap(array, deltas)
-	if errOrder != nil {
-		return errOrder
-	}
-	fmt.Printf("Ordered Array has `%v` entries\n", orderedMap.Len())
+	// orderedMap, errOrder := f.createOrderedArrayMap(array, deltas)
+	// if errOrder != nil {
+	// 	return errOrder
+	// }
+	// fmt.Printf("Ordered Array has `%v` entries\n", orderedMap.Len())
 
 	patchedIndex := 0
 	for index, value := range array {
@@ -125,92 +123,93 @@ func (f *AsciiFormatter) processArray(array []interface{}, deltas []diff.Delta) 
 	return nil
 }
 
-func (f *AsciiFormatter) createOrderedArrayMap(slice []interface{}, deltas []diff.Delta) (out *orderedmap.OrderedMap[string, interface{}], err error) {
-
-	var floatKey float64
-	postDeltaMap := orderedmap.New[string, interface{}]()
-	out = postDeltaMap
-
-	// initialize the map to pre-delta entries
-	for position, value := range slice {
-		preDeltaPosition := diff.Name(strconv.Itoa(position))
-		displacedEntry := diff.NewDisplaced(preDeltaPosition, value, nil) // NOTE: if diff.Displaced NOT used, then we could use float32 as key
-		postDeltaMap.Set(preDeltaPosition.String(), displacedEntry)
-	}
-
-	// process deltas by type... add, delete, moved
-	// In JSON, array values must be of type string, number, object, array, boolean or null.
-	for _, delta := range deltas {
-
-		switch deltaType := delta.(type) {
-		case *diff.Added: // Added objects "displace" the existing in the slice order (and those entries after)
-			// insert value at "post"
-			fmt.Printf("[%T]: PostPosition(): %v, Value: : %+v\n", delta, deltaType.PostPosition(), deltaType.Value)
-			postPosition := deltaType.PostPosition().String()
-			// overwrite any pre-existing value
-			displacedMapEntry, present := postDeltaMap.Set(postPosition, deltaType)
-			fmt.Printf(">> a) Deleted [\"%v\"] \n", deltaType.PostPosition())
-
-			// displace the pre-existing value
-			if present {
-				fmt.Printf("  >> pre-existing value found [%T]: %+v\n", displacedMapEntry, displacedMapEntry)
-				floatKey, err = strconv.ParseFloat(postPosition, 64)
-
-				if err != nil {
-					return
-				}
-				floatKey = floatKey + 0.000001
-				newPosition := fmt.Sprintf("%f", floatKey)
-				fmt.Printf("  >> adding pre-existing value at new position: [\"%v\"] \n", newPosition)
-				postDeltaMap.Set(newPosition, displacedMapEntry)
-			}
-
-		case *diff.Deleted: // Deleted objects still appear in output, so are a
-			fmt.Printf("[%T]: PrePosition(): %v, Value: [%T] %+v\n", delta, deltaType.PrePosition(), deltaType.Value, deltaType.Value)
-			prePosition := deltaType.PrePosition().String()
-			deletedMapEntry, present := postDeltaMap.Set(prePosition, deltaType)
-			if present {
-				fmt.Printf("  >> pre-existing value found: [%T]: %+v\n", deletedMapEntry, deletedMapEntry)
-				// TODO: verify delta and entry match...
-			}
-		case *diff.Moved:
-			prePosition := deltaType.PrePosition().String()
-			postPosition := deltaType.PostPosition().String()
-
-			fmt.Printf("[%T]: PrePosition(): %v, PostPosition(): %v, Value: : %+v\n", delta, prePosition, postPosition, deltaType.Value)
-			// delete value at "pre" (key) insert value at "post" (key)
-			// if pre == post then skip (trace message)
-
-			displacedMapEntry, present := postDeltaMap.Delete(postPosition)
-			fmt.Printf(">> a) Deleted [\"%v\"] \n", deltaType.PostPosition())
-
-			if present {
-				fmt.Printf("  >> pre-existing value found [%T]: %+v\n", displacedMapEntry, displacedMapEntry)
-				floatKey, err = strconv.ParseFloat(postPosition, 64)
-
-				if err != nil {
-					return
-				}
-				floatKey = floatKey + 0.000001
-				newPosition := fmt.Sprintf("%f", floatKey)
-				fmt.Printf("  >> adding pre-existing value at new position: [\"%v\"] \n", newPosition)
-				postDeltaMap.Set(newPosition, displacedMapEntry)
-			}
-		// case *diff.Displaced:
-		// 	// SHOULD NOT see this type on
-		// 	fmt.Printf("invalid Diff.(type): [%T]!!!: PrePosition(): %s\n", delta, deltaType.PrePosition())
-		default:
-			err = fmt.Errorf("unknown or invalid delta type: [%T]", delta)
-		}
-
-	}
-
-	for kv := postDeltaMap.Oldest(); kv != nil; kv = kv.Next() {
-		fmt.Printf("[%s]: %v (%T)\n", kv.Key, kv.Value, kv.Value)
-	}
-
-	return
-}
+// // TODO - Attempt to get post-delta ordering for array output
+// func (f *AsciiFormatter) createOrderedArrayMap(slice []interface{}, deltas []diff.Delta) (out *orderedmap.OrderedMap[string, interface{}], err error) {
+//
+// 	var floatKey float64
+// 	postDeltaMap := orderedmap.New[string, interface{}]()
+// 	out = postDeltaMap
+//
+// 	// initialize the map to pre-delta entries
+// 	for position, value := range slice {
+// 		preDeltaPosition := diff.Name(strconv.Itoa(position))
+// 		displacedEntry := diff.NewDisplaced(preDeltaPosition, value, nil) // NOTE: if diff.Displaced NOT used, then we could use float32 as key
+// 		postDeltaMap.Set(preDeltaPosition.String(), displacedEntry)
+// 	}
+//
+// 	// process deltas by type... add, delete, moved
+// 	// In JSON, array values must be of type string, number, object, array, boolean or null.
+// 	for _, delta := range deltas {
+//
+// 		switch deltaType := delta.(type) {
+// 		case *diff.Added: // Added objects "displace" the existing in the slice order (and those entries after)
+// 			// insert value at "post"
+// 			fmt.Printf("[%T]: PostPosition(): %v, Value: : %+v\n", delta, deltaType.PostPosition(), deltaType.Value)
+// 			postPosition := deltaType.PostPosition().String()
+// 			// overwrite any pre-existing value
+// 			displacedMapEntry, present := postDeltaMap.Set(postPosition, deltaType)
+// 			fmt.Printf(">> a) Deleted [\"%v\"] \n", deltaType.PostPosition())
+//
+// 			// displace the pre-existing value
+// 			if present {
+// 				fmt.Printf("  >> pre-existing value found [%T]: %+v\n", displacedMapEntry, displacedMapEntry)
+// 				floatKey, err = strconv.ParseFloat(postPosition, 64)
+//
+// 				if err != nil {
+// 					return
+// 				}
+// 				floatKey = floatKey + 0.000001
+// 				newPosition := fmt.Sprintf("%f", floatKey)
+// 				fmt.Printf("  >> adding pre-existing value at new position: [\"%v\"] \n", newPosition)
+// 				postDeltaMap.Set(newPosition, displacedMapEntry)
+// 			}
+//
+// 		case *diff.Deleted: // Deleted objects still appear in output, so are a
+// 			fmt.Printf("[%T]: PrePosition(): %v, Value: [%T] %+v\n", delta, deltaType.PrePosition(), deltaType.Value, deltaType.Value)
+// 			prePosition := deltaType.PrePosition().String()
+// 			deletedMapEntry, present := postDeltaMap.Set(prePosition, deltaType)
+// 			if present {
+// 				fmt.Printf("  >> pre-existing value found: [%T]: %+v\n", deletedMapEntry, deletedMapEntry)
+// 				// TODO: verify delta and entry match...
+// 			}
+// 		case *diff.Moved:
+// 			prePosition := deltaType.PrePosition().String()
+// 			postPosition := deltaType.PostPosition().String()
+//
+// 			fmt.Printf("[%T]: PrePosition(): %v, PostPosition(): %v, Value: : %+v\n", delta, prePosition, postPosition, deltaType.Value)
+// 			// delete value at "pre" (key) insert value at "post" (key)
+// 			// if pre == post then skip (trace message)
+//
+// 			displacedMapEntry, present := postDeltaMap.Delete(postPosition)
+// 			fmt.Printf(">> a) Deleted [\"%v\"] \n", deltaType.PostPosition())
+//
+// 			if present {
+// 				fmt.Printf("  >> pre-existing value found [%T]: %+v\n", displacedMapEntry, displacedMapEntry)
+// 				floatKey, err = strconv.ParseFloat(postPosition, 64)
+//
+// 				if err != nil {
+// 					return
+// 				}
+// 				floatKey = floatKey + 0.000001
+// 				newPosition := fmt.Sprintf("%f", floatKey)
+// 				fmt.Printf("  >> adding pre-existing value at new position: [\"%v\"] \n", newPosition)
+// 				postDeltaMap.Set(newPosition, displacedMapEntry)
+// 			}
+// 		// case *diff.Displaced:
+// 		// 	// SHOULD NOT see this type on
+// 		// 	fmt.Printf("invalid Diff.(type): [%T]!!!: PrePosition(): %s\n", delta, deltaType.PrePosition())
+// 		default:
+// 			err = fmt.Errorf("unknown or invalid delta type: [%T]", delta)
+// 		}
+//
+// 	}
+//
+// 	for kv := postDeltaMap.Oldest(); kv != nil; kv = kv.Next() {
+// 		fmt.Printf("[%s]: %v (%T)\n", kv.Key, kv.Value, kv.Value)
+// 	}
+//
+// 	return
+// }
 
 func (f *AsciiFormatter) processObject(object map[string]interface{}, deltas []diff.Delta) error {
 	names := sortedKeys(object)
@@ -234,8 +233,6 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 	matchedDeltas := f.searchDeltas(deltas, position)
 	objectKey := position.String()
 	numDeltaMatches := len(matchedDeltas)
-
-	//fmt.Printf("BEFORE: f.size[]: %v\n", f.size)
 
 	if numDeltaMatches > 0 {
 		for _, matchedDelta := range matchedDeltas {
@@ -295,24 +292,14 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 				fmt.Printf("processItem(): valueType: [%T], matchedDelta type: [%T]\n", value, matchedDeltaType)
 				movedString := fmt.Sprintf("%s%s%s", matchedDeltaType.PrePosition().String(), Moved, matchedDeltaType.PostPosition().String())
 				f.printRecursive(movedString, matchedDeltaType.Value, AsciiMoved)
-
-				// if _, ok := value.(map[string]interface{}); ok {
-				// 	f.printRecursive(objectKey, value, AsciiSame)
-				// } else {
-				// 	fmt.Printf("unexpected type for diff.Move: %T\n", value)
-				// }
-
 			default:
 				err := fmt.Errorf("unknown Delta type [%T] detected", matchedDeltaType)
 				return errors.New(err.Error())
 			}
-
 		}
 	} else {
 		f.printRecursive(objectKey, value, AsciiSame)
 	}
-
-	//fmt.Printf("AFTER: f.size[]: %v\n", f.size)
 
 	return nil
 }

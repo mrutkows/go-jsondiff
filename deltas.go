@@ -462,21 +462,22 @@ func (d *Moved) similarity() (similarity float64) {
 	return
 }
 
-type Displaced struct {
-	preDelta        // struct{ Position }; Position interface
-	similarityCache // Delta interface
+// TODO - new intermediate/transitional delta type for "moved" array objects
+// type Displaced struct {
+// 	preDelta        // struct{ Position }; Position interface
+// 	similarityCache // Delta interface
 
-	// The value before moving
-	Value interface{}
-	// The delta applied after moving (for compatibility)
-	Delta interface{}
-}
+// 	// The value before moving
+// 	Value interface{}
+// 	// The delta applied after moving (for compatibility)
+// 	Delta interface{}
+// }
 
-func NewDisplaced(prePosition Position, value interface{}, delta Delta) *Displaced {
-	d := Displaced{
-		preDelta: preDelta{prePosition},
-		Value:    value,
-		Delta:    delta,
-	}
-	return &d
-}
+// func NewDisplaced(prePosition Position, value interface{}, delta Delta) *Displaced {
+// 	d := Displaced{
+// 		preDelta: preDelta{prePosition},
+// 		Value:    value,
+// 		Delta:    delta,
+// 	}
+// 	return &d
+// }
