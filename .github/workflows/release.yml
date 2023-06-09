@@ -10,21 +10,21 @@ jobs:
   releases-matrix:
     name: Release Matrix
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [darwin, linux, windows]
-        # NOTE: Intentionally, support legacy architectures for windows and darwin (MacOS)
-        goarch: [arm64, amd64, ppc64, s390x]
-        exclude:
-          # NOTE: PowerPC and System 390 only support Linux
-          - goos: darwin
-            goarch: ppc64
-          - goos: darwin
-            goarch: s390x
-          - goos: windows
-            goarch: ppc64
-          - goos: windows
-            goarch: s390x
+    # strategy:
+    #   matrix:
+    #     goos: [darwin, linux, windows]
+    #     # NOTE: Intentionally, support legacy architectures for windows and darwin (MacOS)
+    #     goarch: [arm64, amd64, ppc64, s390x]
+    #     exclude:
+    #       # NOTE: PowerPC and System 390 only support Linux
+    #       - goos: darwin
+    #         goarch: ppc64
+    #       - goos: darwin
+    #         goarch: s390x
+    #       - goos: windows
+    #         goarch: ppc64
+    #       - goos: windows
+    #         goarch: s390x
     steps:
     - uses: actions/checkout@v3
 
@@ -51,3 +51,23 @@ jobs:
     - name: Generate SBOM (from `go.mod`)
       # run: cyclonedx-gomod mod -json=true "-output ${{env.APP_NAME}}-${{env.APP_VERSION}}.bom.json" .
       run: cyclonedx-gomod mod -json=true -output ${{env.SBOM_NAME}}
+    - name: GH Release
+      uses: softprops/action-gh-release@v0.1.15
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          ${{env.SBOM_NAME}}
+          LICENSE
+
+    ## Release binaries in all GOOS/GOARCH combinations (with all config. files)
+    # - uses: wangyoucao577/go-release-action@v1.35
+    #   with:
+    #     github_token: ${{ secrets.GITHUB_TOKEN }}
+    #     goos: ${{ matrix.goos }}
+    #     goarch: ${{ matrix.goarch }}
+    #     extra_files: LICENSE config.json license.json custom.json ${{env.SBOM_NAME}}
+    #     # "auto" will use ZIP for Windows, otherwise default is TAR
+    #     compress_assets: auto
+    #     # NOTE: This verbose flag may be removed
+    #     build_flags: -v
+    #     ldflags: -X "main.Version=${{ env.APP_VERSION }}" -X "main.Binary=${{ env.APP_NAME }}"
