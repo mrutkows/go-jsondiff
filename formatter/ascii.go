@@ -289,7 +289,7 @@ func (f *AsciiFormatter) processArrayOrObjectItem(value interface{}, deltas []di
 			case *diff.Deleted:
 				f.printRecursive(objectKey, matchedDeltaType.Value, AsciiDeleted)
 			case *diff.Moved:
-				fmt.Printf("processItem(): valueType: [%T], matchedDelta type: [%T]\n", value, matchedDeltaType)
+				//fmt.Printf("processItem(): valueType: [%T], matchedDelta type: [%T]\n", value, matchedDeltaType)
 				movedString := fmt.Sprintf("%s%s%s", matchedDeltaType.PrePosition().String(), Moved, matchedDeltaType.PostPosition().String())
 				f.printRecursive(movedString, matchedDeltaType.Value, AsciiMoved)
 			default:
