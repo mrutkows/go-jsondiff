@@ -9,8 +9,6 @@ import (
 
 	"encoding/json"
 	"fmt"
-
-	"github.com/yudai/pp"
 )
 
 var _ = Describe("Gojsondiff", func() {
@@ -103,12 +101,16 @@ var _ = Describe("Gojsondiff", func() {
 }
 `)
 				Expect(err).To(BeNil())
-				pp.Print(diff)
+				// NOTE: removed failing "Pretty Printer" formerly used to colorize format/output
+				//pp.Print(diff)
+				fmt.Printf("%+v", diff)
 
 				a := LoadFixture("FIXTURES/jsondiffpatch.json")
 				differ := New()
 				differ.ApplyPatch(a, diff)
-				pp.Println(a)
+				// NOTE: removed failing "Pretty Printer" formerly used to colorize format/output
+				//pp.Println(a)
+				fmt.Printf("%+v", a)
 				result, _ := json.Marshal(a)
 				fmt.Println(string(result))
 			})
